@@ -31,7 +31,7 @@ When a user logs in, JavaScript generates a browser fingerprint using [IPQS](htt
 
 These identifier values are hashed together into a single hardware identifier:
 ```php
-$deviceID = sha1("device_id-canvas_hash-webgl_hash-graphics_card-ssl_fingerprint");
+$deviceID = hash('sha256', 'device_id-canvas_hash-webgl_hash-graphics_card-ssl_fingerprint');
 ```
 This hardware identifier is stored in the database, linking it to that session.
 

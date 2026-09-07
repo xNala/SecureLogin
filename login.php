@@ -9,23 +9,44 @@ use Library\User\Auth;
 $user = new Auth();
 $csrf = new CSRF();
 
+/**
+ * Handles the login or returns an error string
+ *
+ * @param string $email
+ * @param string $password
+ * @param string $csrfToken
+ * @param Auth $user
+ * @param CSRF $csrf
+ * @return string
+ */
+function HandleLogin(string $email, string $password, string $csrfToken, Auth $user, CSRF $csrf): string {
+    if ($csrf->VerifyToken($csrfToken) === false) {
+        return 'invalid CSRF token';
+    }
+
+    if ($user->DoLogin($email, $password) === false) {
+        return 'invalid credentials';
+    }
+    
+    return '';
+}
+
 if ($user->IsLoggedIn() === true) {
     exit(header('Location: /index.php'));
 }
 
 if (isset($_POST['login']) === true) {
     if (
-        isset($_POST['email']) === true && 
-        isset($_POST['password']) === true &&
-        isset($_POST['csrf-token']) === true
+        isset($_POST['email']) === false ||
+        isset($_POST['password']) === false ||
+        isset($_POST['csrf-token']) === false
     ) {
-        if ($csrf->VerifyToken($_POST['csrf-token']) === false) {
-            exit('Invalid CSRF token');
-        }
-        
-        if ($user->DoLogin($_POST['email'], $_POST['password']) === true) {
+        $error = 'missing required parameters';
+    } else {
+        $error = HandleLogin($_POST['email'], $_POST['password'], $_POST['csrf-token'], $user, $csrf);
+        if ($error === '') {
             exit(header('Location: /index.php'));
-        }
+        }   
     }
 }
 
@@ -38,11 +59,20 @@ $csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
         <meta charset='utf-8'>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
         <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css' rel='stylesheet'>
+        <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css'>
         <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js'></script>
 
         <style>
             .login-card {
                 width: 400px;
+            }
+
+            .login-btn i {
+                transition: margin-left 0.2s ease;
+            }
+            
+            .login-btn:hover i {
+                margin-left: 0.5rem !important;
             }
         </style>
     </head>
@@ -51,8 +81,18 @@ $csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
         <main class='d-flex align-items-center justify-content-center min-vh-100 bg-body-tertiary'>
             <div class='card shadow-sm text-center login-card'>
                 <div class='card-body p-4'>
-                    <i class='bi bi-envelope-paper fs-1 text-primary'></i>
+                    <i class='bi bi-shield-lock fs-1 text-primary'></i>
                     <h1 class='fs-4 fw-semibold mt-2 mb-3'>Secure Sign In</h1>
+
+<?php 
+    if (isset($error) === true && empty($error) === false) {
+?>
+                    <div class='alert alert-danger' role='alert'>
+                        <?php echo $error; ?>
+                    </div>
+<?php 
+    }
+?>
                     
                     <form method='post'>
                         <div class='mb-2'>
@@ -62,11 +102,11 @@ $csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
 
                         <div class='mb-2'>
                             <label for='login-password' class='form-label visually-hidden'>Passowrd</label>
-                            <input type='password' name='password' class='form-control form-control-lg text-center' id='login-password' placeholder='*********' autocomplete='username' required>
+                            <input type='password' name='password' class='form-control form-control-lg text-center' id='login-password' placeholder='*********' autocomplete='off' required>
                         </div>
 
-                        <input type='hidden' name='csrf-token' value='<?php echo $csrfToken ?>' \>
-                        <button class='btn btn-primary w-100' type='submit' name='login'><i class='bi bi-magic me-2'></i>Log In</button>
+                        <input type='hidden' name='csrf-token' value='<?php echo $csrfToken ?>'>
+                        <button class='btn btn-primary w-100 login-btn' type='submit' name='login'>Log In<i class='bi bi-arrow-right ms-1'></i></button>
                     </form>
                     <p class='small text-body-secondary mt-3 mb-0'>Dont have an account? <a href='#' class='text-decoration-none'>Register with us!</a></p>
                 </div>
