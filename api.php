@@ -9,7 +9,6 @@ use Library\User\DeviceCheck;
 use Library\Database\Database;
 
 $csrf = new CSRF();
-$db = new Database();
 $ipqs = new Postback();
 $user = new DeviceCheck();
 
