@@ -59,12 +59,20 @@ $csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
         <meta charset='utf-8'>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
         <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css' rel='stylesheet'>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+        <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css'>
         <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js'></script>
 
         <style>
             .login-card {
                 width: 400px;
+            }
+
+            .login-btn i {
+                transition: margin-left 0.2s ease;
+            }
+            
+            .login-btn:hover i {
+                margin-left: 0.5rem !important;
             }
         </style>
     </head>
@@ -79,7 +87,7 @@ $csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
 <?php 
     if (isset($error) === true && empty($error) === false) {
 ?>
-                    <div class="alert alert-danger" role="alert">
+                    <div class='alert alert-danger' role='alert'>
                         <?php echo $error; ?>
                     </div>
 <?php 
@@ -98,7 +106,7 @@ $csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
                         </div>
 
                         <input type='hidden' name='csrf-token' value='<?php echo $csrfToken ?>'>
-                        <button class='btn btn-primary w-100' type='submit' name='login'><i class='bi bi-arrow-right me-2'></i>Log In</button>
+                        <button class='btn btn-primary w-100 login-btn' type='submit' name='login'>Log In<i class='bi bi-arrow-right ms-1'></i></button>
                     </form>
                     <p class='small text-body-secondary mt-3 mb-0'>Dont have an account? <a href='#' class='text-decoration-none'>Register with us!</a></p>
                 </div>
