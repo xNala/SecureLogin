@@ -102,12 +102,20 @@ $trackerJS = $tracker->GenerateTracker();
         <meta charset='utf-8'>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
         <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css' rel='stylesheet'>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
+        <link rel='stylesheet' href='https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css'>
         <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js'></script>
 
         <style>
             .login-card {
                 width: 400px;
+            }
+
+            .login-btn i {
+                transition: margin-left 0.2s ease;
+            }
+            
+            .login-btn:hover i {
+                margin-left: 0.5rem !important;
             }
         </style>
     </head>
@@ -122,7 +130,7 @@ $trackerJS = $tracker->GenerateTracker();
 <?php 
     if (isset($error) === true && empty($error) === false) {
 ?>
-                    <div class="alert alert-danger" role="alert">
+                    <div class='alert alert-danger' role='alert'>
                         <?php echo $error; ?>
                     </div>
 <?php 
@@ -135,15 +143,15 @@ $trackerJS = $tracker->GenerateTracker();
                             <input type='text' name='mfa-code' class='form-control form-control-lg text-center' id='mfa-code' placeholder='hardcoded to 000000' autocomplete='off' required>
                         </div>
 
-                        <input type='hidden' name='csrf-token' value='<?php echo $csrfToken ?>' \>
-                        <button class='btn btn-primary w-100' type='submit'><i class='bi bi-unlock2 me-2'></i>Enter</button>
+                        <input type='hidden' name='csrf-token' value='<?php echo $csrfToken ?>'>
+                        <button class='btn btn-primary w-100 login-btn' type='submit'>Enter<i class='bi bi-unlock2 ms-1'></i></button>
                     </form>
                 </div>
             </div>
         </main>
 
         <?php echo $trackerJS; ?>
-        <script type="text/javascript">
+        <script type='text/javascript'>
             var IPQ = {
                 Callback: function(){
                     Startup.FormFieldPrepend  = 'ipqs_';
