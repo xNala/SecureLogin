@@ -13,7 +13,60 @@ $ipqs = new Postback();
 $tracker = new Tracker();
 $user = new DeviceCheck();
 
-$error = '';
+/**
+ * Handles the MFA or returns an error string
+ *
+ * @param string $mfaCode
+ * @param string $requestId
+ * @param string $csrfToken
+ * @param int $userId
+ * @param DeviceCheck $user
+ * @param CSRF $csrf
+ * @param Postback $ipqs
+ * @return string
+ */
+function HandleMFA(string $mfaCode, string $requestId, string $csrfToken, int $userId, DeviceCheck $user, CSRF $csrf, Postback $ipqs): string {
+    if ($csrf->VerifyToken($csrfToken) === false) {
+        return 'Invalid CSRF token';
+    }
+    
+    $postbackResult = $ipqs->ResultsPostback($requestId);
+    
+    if (
+        $postbackResult === [] || 
+        $postbackResult['success'] === false
+    ) {
+        return 'ipqs postback failed';
+    }
+
+    if ($ipqs->IsRequestIDConsumed($requestId) === true) {
+        return 'failed request_id consumed check';
+    }
+    
+    if ($ipqs->ConsumeRequestID($requestId, $userId) === false) {
+        return 'failed consuming request_id';
+    }
+
+    $deviceID = $ipqs->GenerateHighEntropyDeviceID($postbackResult);
+    
+    if ($user->VerifyMFA($mfaCode) === false) {
+        return 'invalid mfa code';
+    }
+
+    // regenerate the sessionId and store it in the database
+    session_regenerate_id(true);
+    $sessionId = session_id();
+
+    if ($user->InsertSession($sessionId) === false) {
+        return 'unexpected error inserting session';
+    }
+
+    if ($user->SetDeviceID($deviceID) === false) {
+        return 'failed to set device id for this session';
+    }
+    
+    return '';
+}
 
 if ($user->IsLoggedIn() === false) {
     exit(header('Location: /login.php'));
@@ -25,61 +78,22 @@ if ($user->IsMFAComplete() === true) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (
-        isset($_POST['mfa-code']) === true &&
-        isset($_POST['csrf-token']) === true &&
-        isset($_POST['ipqs_success']) === true && $_POST['ipqs_success'] === 'true' &&
-        isset($_POST['ipqs_request_id']) === true
+        isset($_POST['mfa-code']) === false ||
+        isset($_POST['csrf-token']) === false ||
+        isset($_POST['ipqs_success']) === false || $_POST['ipqs_success'] !== 'true' ||
+        isset($_POST['ipqs_request_id']) === false
     ) {
-        if ($csrf->VerifyToken($_POST['csrf-token']) === false) {
-            $error = 'Invalid CSRF token';
-        }
-        
-        $postbackResult = $ipqs->ResultsPostback($_POST['ipqs_request_id']);
-        
-        if (
-            $postbackResult === [] || 
-            $postbackResult['success'] === false
-        ) {
-            $error = 'ipqs postback failed';
-        }
-
-        if ($ipqs->IsRequestIDConsumed($_POST['ipqs_request_id']) === true) {
-            $error = 'failed request_id consumed check';
-        }
-        
-        if ($ipqs->ConsumeRequestID($_POST['ipqs_request_id'], $_SESSION['user']['userID']) === false) {
-            $error = 'failed consuming request_id';
-        }
-    
-        $deviceID = $ipqs->GenerateHighEntropyDeviceID($postbackResult);
-        
-        if ($user->VerifyMFA($_POST['mfa-code']) === true) {
-            // regenerate the sessionId and store it in the database
-            session_regenerate_id(true);
-            $sessionId = session_id();
-
-            if ($user->InsertSession($sessionId) === false) {
-                $error = 'unexpected error inserting session';
-            }
-
-            if ($user->SetDeviceID($deviceID) === false) {
-                $error = 'failed to set device id for this session';
-            }
-
-            if ($error === '') {
-                exit(header('Location: /index.php'));
-            }
-        } else {
-            $error = 'invalid mfa code';
-        }
-    } else {
         $error = 'missing required parameters';
+    } else {
+        $error = HandleMFA($_POST['mfa-code'], $_POST['ipqs_request_id'], $_POST['csrf-token'], $_SESSION['user']['userID'], $user, $csrf, $ipqs);
+        if ($error === '') {
+            exit(header('Location: /index.php'));
+        }
     }
 }
 
 $csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
 $trackerJS = $tracker->GenerateTracker();
-
 ?>
 
 <html>
@@ -88,6 +102,7 @@ $trackerJS = $tracker->GenerateTracker();
         <meta charset='utf-8'>
         <meta name='viewport' content='width=device-width, initial-scale=1'>
         <link href='https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css' rel='stylesheet'>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css">
         <script src='https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js'></script>
 
         <style>
@@ -105,7 +120,7 @@ $trackerJS = $tracker->GenerateTracker();
                     <h1 class='fs-4 fw-semibold mt-2 mb-3'>Secure MFA</h1>
 
 <?php 
-    if ($error !== '') {
+    if (isset($error) === true && empty($error) === false) {
 ?>
                     <div class="alert alert-danger" role="alert">
                         <?php echo $error; ?>
@@ -121,7 +136,7 @@ $trackerJS = $tracker->GenerateTracker();
                         </div>
 
                         <input type='hidden' name='csrf-token' value='<?php echo $csrfToken ?>' \>
-                        <button class='btn btn-primary w-100' type='submit'><i class='bi bi-magic me-2'></i>Enter</button>
+                        <button class='btn btn-primary w-100' type='submit'><i class='bi bi-unlock2 me-2'></i>Enter</button>
                     </form>
                 </div>
             </div>
