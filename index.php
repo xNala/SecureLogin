@@ -24,8 +24,9 @@ if ($user->ValidateSession() === false) {
     exit(header('Location: /mfa.php'));
 }
 
-$csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
 $trackerJS = $tracker->GenerateTracker();
+$csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
+$userEmail = htmlspecialchars($user->GetEmail(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
 
 $quotes = [
     'And you may ask yourself.... How did I get here?',
@@ -72,7 +73,9 @@ $outputText = $quotes[array_rand($quotes)];
                     <h2 style='white-space: pre-line;'><?php echo $outputText; ?></h2>
                     <br>
                     <h3>This session is device ID locked!</h3>
-                    <small>Account Email: <?php echo $user->GetEmail(); ?></small>
+                    <small>Account Email: <?php echo $userEmail; ?></small>
+                    <br>
+                    <small>SessionID: <?php echo session_id(); ?></small>
                     <br>
                     <br>
                     <button class='btn btn-primary' type='button' onclick='protectedAction()'>

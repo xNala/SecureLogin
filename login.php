@@ -9,6 +9,8 @@ use Library\User\Auth;
 $user = new Auth();
 $csrf = new CSRF();
 
+$error = '';
+
 if ($user->IsLoggedIn() === true) {
     exit(header('Location: /index.php'));
 }
@@ -20,12 +22,18 @@ if (isset($_POST['login']) === true) {
         isset($_POST['csrf-token']) === true
     ) {
         if ($csrf->VerifyToken($_POST['csrf-token']) === false) {
-            exit('Invalid CSRF token');
+            $error = 'Invalid CSRF token';
         }
         
-        if ($user->DoLogin($_POST['email'], $_POST['password']) === true) {
+        if ($user->DoLogin($_POST['email'], $_POST['password']) === false) {
+            $error = 'invalid credentials';
+        }
+
+        if ($error === '') {
             exit(header('Location: /index.php'));
         }
+    } else {
+        $error = 'missing required parameters';
     }
 }
 
@@ -53,6 +61,16 @@ $csrfToken = htmlspecialchars($csrf->GenerateToken(), ENT_QUOTES, 'UTF-8');
                 <div class='card-body p-4'>
                     <i class='bi bi-envelope-paper fs-1 text-primary'></i>
                     <h1 class='fs-4 fw-semibold mt-2 mb-3'>Secure Sign In</h1>
+
+<?php 
+    if ($error !== '') {
+?>
+                    <div class="alert alert-danger" role="alert">
+                        <?php echo $error; ?>
+                    </div>
+<?php 
+    }
+?>
                     
                     <form method='post'>
                         <div class='mb-2'>
