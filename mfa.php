@@ -124,7 +124,7 @@ $trackerJS = $tracker->GenerateTracker();
         <main class='d-flex align-items-center justify-content-center min-vh-100 bg-body-tertiary'>
             <div class='card shadow-sm text-center login-card'>
                 <div class='card-body p-4'>
-                    <i class='bi bi-envelope-paper fs-1 text-primary'></i>
+                    <i class='bi bi-shield-lock fs-1 text-primary'></i>
                     <h1 class='fs-4 fw-semibold mt-2 mb-3'>Secure MFA</h1>
 
 <?php 
