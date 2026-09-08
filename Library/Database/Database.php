@@ -23,7 +23,11 @@ class Database extends PDO
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ]);
         } catch (PDOException $e) {
-            print 'Error: ' . $e->getMessage() . '<br/>';
+            if (Config::DEBUGMODE === true) {
+                print 'Error: ' . $e->getMessage() . '<br/>';   
+            } else {
+                print 'Database problems';
+            }
             die();
         }
     }
