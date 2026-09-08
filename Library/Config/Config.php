@@ -12,4 +12,6 @@ class Config {
     const IPQS_TRACKER_KEY = '';
     const IPQS_TRACKER_DOMAIN = '';
     const IPQS_API_KEY = '';
+
+    const DEBUGMODE = false;
 }
