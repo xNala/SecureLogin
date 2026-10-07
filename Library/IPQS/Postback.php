@@ -30,8 +30,8 @@ class Postback
             CURLOPT_CONNECTTIMEOUT => 5,
             CURLOPT_TIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => false,
-            CURLOPT_SSL_VERIFYPEER => Config::DEBUGMODE,
-            CURLOPT_SSL_VERIFYHOST => Config::DEBUGMODE,
+            CURLOPT_SSL_VERIFYPEER => Config::$DEBUG_MODE,
+            CURLOPT_SSL_VERIFYHOST => Config::$DEBUG_MODE,
         ]);
     
         $response = curl_exec($curl);

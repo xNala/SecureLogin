@@ -23,7 +23,7 @@ class Database extends PDO
                 PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
             ]);
         } catch (PDOException $e) {
-            if (Config::DEBUGMODE === true) {
+            if (Config::$DEBUG_MODE === true) {
                 print 'Error: ' . $e->getMessage() . '<br/>';   
             } else {
                 print 'Database problems';
@@ -36,15 +36,18 @@ class Database extends PDO
      * Run a database query
      *
      * @param string $sql - the SQL query to run
-     * @param ?array $args - bind parameters
+     * @param array<string|int, mixed> $args - bind parameters
      * @return ?PDOStatement
      */
     public function DoQuery(string $sql, array $args = []): ?PDOStatement
     {
         $stmt = $this->prepare($sql);
-        $stmt->execute($args);
 
         if ($stmt === false) {
+            return null;
+        }
+        
+        if ($stmt->execute($args) === false) {
             return null;
         }
         

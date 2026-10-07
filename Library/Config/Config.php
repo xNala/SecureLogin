@@ -13,5 +13,5 @@ class Config {
     const IPQS_TRACKER_DOMAIN = '';
     const IPQS_API_KEY = '';
 
-    const DEBUGMODE = false;
+    public static bool $DEBUG_MODE = false;
 }
