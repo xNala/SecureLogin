@@ -17,9 +17,11 @@ class CSRF {
         
         $token = bin2hex(random_bytes(32));
         $hash = hash('sha256', $token);
-        
-        $_SESSION['csrf_tokens'][$hash] = time() + static::TOKEN_LIFETIME;
 
+        $tokens = $this->GetTokens();
+        $tokens[$hash] = time() + self::TOKEN_LIFETIME;
+        $_SESSION['csrf_tokens'] = $tokens;
+        
         $this->LimitTokens();
         
         return $token;
@@ -38,16 +40,18 @@ class CSRF {
             return false;
         }
 
+        $tokens = $this->GetTokens();
         $hash = hash('sha256', $token);
         
-        if (isset($_SESSION['csrf_tokens'][$hash]) === false) {
+        if (isset($tokens[$hash]) === false) {
             return false;
         }
 
-        $expires = $_SESSION['csrf_tokens'][$hash];
+        $expires = $tokens[$hash];
 
         // token is valid, consume it
-        unset($_SESSION['csrf_tokens'][$hash]);
+        unset($tokens[$hash]);
+        $_SESSION['csrf_tokens'] = $tokens;
         
         return true;
     }
@@ -62,13 +66,16 @@ class CSRF {
             return;
         }
 
+        $tokens = $this->GetTokens();
         $now = time();
 
-        foreach ($_SESSION['csrf_tokens'] as $hash => $expires) {
+        foreach ($tokens as $hash => $expires) {
             if ($expires < $now) {
-                unset($_SESSION['csrf_tokens'][$hash]);
+                unset($tokens[$hash]);
             }
         }
+
+        $_SESSION['csrf_tokens'] = $tokens;
     }
 
     /**
@@ -80,15 +87,42 @@ class CSRF {
         if (isset($_SESSION['csrf_tokens']) === false) {
             return;
         }
+
+        $tokens = $this->GetTokens();
         
-        if (count($_SESSION['csrf_tokens']) <= static::MAX_TOKENS) {
+        if (count($tokens) <= self::MAX_TOKENS) {
             return;
         }
 
-        asort($_SESSION['csrf_tokens']);
+        asort($tokens);
 
-        while (count($_SESSION['csrf_tokens']) > static::MAX_TOKENS) {
-            array_shift($_SESSION['csrf_tokens']);
+        while (count($tokens) > self::MAX_TOKENS) {
+            array_shift($tokens);
         }
+
+        $_SESSION['csrf_tokens'] = $tokens;
+    }
+
+    /**
+     * Get the CSRF tokens from the session as a typed array
+     *
+     * @return array<string, int>
+     */
+    private function GetTokens(): array {
+        $stored = $_SESSION['csrf_tokens'] ?? [];
+
+        if (is_array($stored) === false) {
+            return [];
+        }
+
+        $tokens = [];
+
+        foreach ($stored as $hash => $expires) {
+            if (is_string($hash) === true && is_int($expires) === true) {
+                $tokens[$hash] = $expires;
+            }
+        }
+        
+        return $tokens;
     }
 }
