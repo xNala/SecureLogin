@@ -14,7 +14,7 @@ class Postback
      * note: you should probably prevent requestID re-use
      *
      * @param string $requestID
-     * @return array
+     * @return array<string|int, mixed>
      */
     public function ResultsPostback(string $requestID): array {  
         $url = sprintf(
@@ -31,13 +31,13 @@ class Postback
             CURLOPT_TIMEOUT => 10,
             CURLOPT_FOLLOWLOCATION => false,
             CURLOPT_SSL_VERIFYPEER => Config::$DEBUG_MODE,
-            CURLOPT_SSL_VERIFYHOST => Config::$DEBUG_MODE,
+            CURLOPT_SSL_VERIFYHOST => (Config::$DEBUG_MODE === true) ? 2 : 0,
         ]);
     
         $response = curl_exec($curl);
         curl_close($curl);
-        
-        if ($response === false) {
+
+        if (is_string($response) === false) {
             return [];
         }
     
@@ -56,23 +56,28 @@ class Postback
     /**
      * Takes a VALID response from the IPQS Postback API to then generate a high entropy device identifier
      *
-     * @param array $postbackResult
+     * @param array<string|int, mixed> $postbackResult
      * @return string
      */
     public function GenerateHighEntropyDeviceID(array $postbackResult): string {
         // using an identifier that uses multiple of the user's fingerprint values is going to be more secure
         // this could be considered an "HWID" tied to that browser instance on that computer
-        $deviceID = hash(
-            'sha256',
-            sprintf(
-                '%s-%s-%s-%s-%s', 
-                $postbackResult['device_id']       ?? '', // should be unique to the device itself
-                $postbackResult['canvas_hash']     ?? '', // changes for GPU, Driver (and version), and Browser combinations
-                $postbackResult['webgl_hash']      ?? '',
-                $postbackResult['graphics_card']   ?? '', // the name of the device's graphics processor
-                $postbackResult['ssl_fingerprint'] ?? ''  // hash of te browser's supported SSL/TLS ciphers
-            )
-        );
+        $keys = [
+            'device_id',       // should be unique to the device itself
+            'canvas_hash',     // changes for GPU, Driver (and version), and Browser combinations
+            'webgl_hash',
+            'graphics_card',   // the name of the device's graphics processor
+            'ssl_fingerprint', // hash of the browser's supported SSL/TLS ciphers
+        ];
+        
+        $parts = [];
+
+        foreach ($keys as $key) {
+            $value = $postbackResult[$key] ?? '';
+            $parts[] = (is_scalar($value) === true) ? (string) $value : '';
+        }
+
+        $deviceID = hash('sha256', implode('-', $parts));
         
         return $deviceID;
     }
