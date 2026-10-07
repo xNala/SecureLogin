@@ -42,14 +42,19 @@ class CurrentUser {
      * @return string
      */
     public function GetEmail(): string {
-        if (isset($_SESSION['user']['userID']) === false) {
+        $sessionUser = $_SESSION['user'];
+
+        if (
+            is_array($sessionUser) === false || 
+            isset($sessionUser['userID']) === false
+        ) {
             return '';
         }
-
+        
         $users = $this->DB->DoQuery(
             'SELECT `email` FROM `users` WHERE `id` = :uid',
             [
-                'uid' => $_SESSION['user']['userID']
+                'uid' => $sessionUser['userID']
             ]
         );
 
@@ -59,6 +64,10 @@ class CurrentUser {
 
         $user = $users->fetch(PDO::FETCH_ASSOC);
 
+        if (is_array($user) === false || is_string($user['email']) === false) {
+            return '';
+        }
+        
         return $user['email'];
     }
     
@@ -68,7 +77,13 @@ class CurrentUser {
      * @return bool
      */
     public function IsLoggedIn(): bool {
-        if (isset($_SESSION['user']['loggedIn']) === true && $_SESSION['user']['loggedIn'] === true) {
+        $sessionUser = $_SESSION['user'];
+        
+        if (
+            is_array($sessionUser) === true && 
+            isset($sessionUser['loggedIn']) === true && 
+            $sessionUser['loggedIn']  === true
+        ) {
             return true;
         }
 
@@ -81,7 +96,13 @@ class CurrentUser {
      * @return bool
      */
     public function IsMFAComplete(): bool {
-        if (isset($_SESSION['user']['mfaComplete']) === true && $_SESSION['user']['mfaComplete'] === true) {
+        $sessionUser = $_SESSION['user'];
+
+        if (
+            is_array($sessionUser) === true && 
+            isset($sessionUser['mfaComplete']) === true && 
+            $sessionUser['mfaComplete'] === true
+        ) {
             return true;
         }
         
@@ -95,7 +116,13 @@ class CurrentUser {
      * @return bool
      */
     public function InsertSession(string $sessionID): bool {
-        $stmt = $this->DB->DoQuery('INSERT INTO `user_sessions` (`session_id`, `user_id`) VALUES (?, ?)', [$sessionID, $_SESSION['user']['userID']]);
+        $sessionUser = $_SESSION['user'];
+
+        if (is_array($sessionUser) === false) {
+            return false;
+        }
+        
+        $stmt = $this->DB->DoQuery('INSERT INTO `user_sessions` (`session_id`, `user_id`) VALUES (?, ?)', [$sessionID, $sessionUser['userID']]);
 
         if ($stmt === null) {
             return false;
@@ -110,7 +137,12 @@ class CurrentUser {
      * @return bool
      */
     public function RevokeSession(): bool {
-        if (isset($_SESSION['user']['userID']) === false) {
+        $sessionUser = $_SESSION['user'];
+
+        if (
+            is_array($sessionUser) === false || 
+            isset($sessionUser['userID']) === false
+        ) {
             return false;
         }
 
@@ -118,7 +150,7 @@ class CurrentUser {
             'UPDATE `user_sessions` SET `revoked_at` = CURRENT_TIMESTAMP WHERE `session_id` = :sid AND `user_id` = :uid AND `revoked_at` IS NULL',
             [
                 'sid' => session_id(),
-                'uid' => $_SESSION['user']['userID']
+                'uid' => $sessionUser['userID']
             ]
         );
 
@@ -131,17 +163,22 @@ class CurrentUser {
      * @return bool
      */
     public function ValidateSession(): bool {
-        if (isset($_SESSION['user']['userID']) === false) {
+        $sessionUser = $_SESSION['user'];
+
+        if (
+            is_array($sessionUser) === false || 
+            isset($sessionUser['userID']) === false
+        ) {
             return false;
         }
-
+        
         $sessionID = session_id();
 
         $sessions = $this->DB->DoQuery(
             'SELECT `id`, `session_id`, `user_id`, `device_id`, `created_at`, `last_seen_at`, `revoked_at` FROM `user_sessions` WHERE `session_id` = :sid AND `user_id` = :uid',
             [
                 'sid' => $sessionID, 
-                'uid' => $_SESSION['user']['userID']
+                'uid' => $sessionUser['userID']
             ]
         );
         
@@ -150,6 +187,11 @@ class CurrentUser {
         }
 
         $session = $sessions->fetch(PDO::FETCH_ASSOC);
+        
+        if (is_array($session) === false) {
+            return false;
+        }
+        
         if ($session['revoked_at'] !== null) {
             return false;
         }

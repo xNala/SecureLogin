@@ -33,8 +33,19 @@ class Auth extends CurrentUser {
         }
 
         $user = $users->fetch(PDO::FETCH_ASSOC);
-        if (password_verify($password, $user['password']) === true) {
-            $this->SetUser(intval($user['id']));
+        if (is_array($user) === false) {
+            return false;
+        }
+        
+        $hash = $user['password'];
+        $id = $user['id'];
+
+        if (is_string($hash) === false || is_numeric($id) === false) {
+            return false;
+        }
+        
+        if (password_verify($password, $hash) === true) {
+            $this->SetUser(intval($id));
             return true;
         }
         
@@ -62,6 +73,13 @@ class Auth extends CurrentUser {
      * @return void
      */
     public function InvalidateMFA(): void {
-        $_SESSION['user']['mfaComplete'] = false;
+        $user = $_SESSION['user'] ?? [];
+        
+        if (is_array($user) === false) {
+            $user = [];
+        }
+
+        $user['mfaComplete'] = false;
+        $_SESSION['user'] = $user;
     }
 }

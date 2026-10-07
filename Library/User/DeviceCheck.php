@@ -26,7 +26,12 @@ class DeviceCheck extends Auth {
      * @return bool
      */
     public function ValidateDeviceID(string $deviceID): bool {
-        if (isset($_SESSION['user']['userID']) === false) {
+        $sessionUser = $_SESSION['user'];
+
+        if (
+            is_array($sessionUser) === false || 
+            isset($sessionUser['userID']) === false
+        ) {
             return false;
         }
 
@@ -34,7 +39,7 @@ class DeviceCheck extends Auth {
             'SELECT `device_id` FROM `user_sessions` WHERE `session_id` = :sid AND `user_id` = :uid AND `revoked_at` IS NULL',
             [
                 'sid' => session_id(),
-                'uid' => $_SESSION['user']['userID']
+                'uid' => $sessionUser['userID']
             ]
         );
 
@@ -44,6 +49,10 @@ class DeviceCheck extends Auth {
     
         $session = $sessions->fetch(PDO::FETCH_ASSOC);
 
+        if (is_array($session) === false) {
+            return false;
+        }
+        
         if ($session['device_id'] === null) {
             return false;
         }
@@ -53,7 +62,7 @@ class DeviceCheck extends Auth {
                 'UPDATE `user_sessions` SET `revoked_at` = CURRENT_TIMESTAMP WHERE `session_id` = :sid AND `user_id` = :uid AND `revoked_at` IS NULL',
                 [
                     'sid' => session_id(),
-                    'uid' => $_SESSION['user']['userID']
+                    'uid' => $sessionUser['userID']
                 ]
             );
     
@@ -70,7 +79,12 @@ class DeviceCheck extends Auth {
      * @return bool
      */
     public function SetDeviceID(string $deviceID): bool {
-        if (isset($_SESSION['user']['userID']) === false) {
+        $sessionUser = $_SESSION['user'];
+
+        if (
+            is_array($sessionUser) === false || 
+            isset($sessionUser['userID']) === false
+        ) {
             return false;
         }
         
@@ -79,7 +93,7 @@ class DeviceCheck extends Auth {
             [
                 'device_id' => $deviceID,
                 'sid' => session_id(),
-                'uid' => $_SESSION['user']['userID']
+                'uid' => $sessionUser['userID']
             ]
         );
 
@@ -87,7 +101,8 @@ class DeviceCheck extends Auth {
             return false;
         }
 
-        $_SESSION['user']['mfaComplete'] = true;
+        $sessionUser['mfaComplete'] = true;
+        $_SESSION['user'] = $sessionUser;
     
         return true;
     }
